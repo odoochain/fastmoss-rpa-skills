@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://127.0.0.1:10086/command -H 'Content-Type: application/json' -d '{\"action\":\"network\",\"args\":{\"cmd\":\"stop\"},\"session\":\"fastmoss-market\"}')",
+      "Bash(mkdir -p \"D:/fastmoss-rpa/.claude/skills/fastmoss-market/scripts\" \"D:/fastmoss-rpa/.claude/skills/fastmoss-market/references\")"
+    ]
+  }
+}
