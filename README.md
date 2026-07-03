@@ -589,3 +589,7 @@ curl -s -X POST http://127.0.0.1:10086/command \
 - [Kimi WebBridge 文档](https://kimi.com/features/webbridge)
 - [Claude Code 文档](https://claude.ai/code)
 - 项目内：`CLAUDE.md`（Claude Code 项目指南）、各 skill 的 `SKILL.md`（入口文档）
+
+## 特别感谢：
+
+https://linux.do 社区佬友 
