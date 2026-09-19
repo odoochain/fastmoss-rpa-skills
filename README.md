@@ -1,6 +1,6 @@
-# fastmoss-rpa
+# fastmoss-browserskill
 
-> Browser-RPA + 数据分析工具集，覆盖 [fastmoss.com](https://www.fastmoss.com) (TikTok Shop 数据分析平台) 全部 7 个核心模块。基于 [Kimi WebBridge](https://kimi.com/features/webbridge) 驱动用户真实浏览器（复用登录态），把 FastMoss 的榜单/趋势/市场数据落成 CSV，并自动生成 Markdown 分析报告。
+> Browser-RPA + 数据分析工具集，覆盖 [fastmoss.com](https://www.fastmoss.com) (TikTok Shop 数据分析平台) 全部 7 个核心模块。基于 [BrowserSkill](https://github.com/Tencent/browserskill) 驱动用户真实浏览器（复用登录态），把 FastMoss 的榜单/趋势/市场数据落成 CSV，并自动生成 Markdown 分析报告。
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## 项目特点
 
-- **真实浏览器复用登录态** — 通过 Kimi WebBridge 驱动用户已经登录的 Chrome/Edge，无需扫码、无需 token、无需 captcha 破解。
+- **真实浏览器复用登录态** — 通过 BrowserSkill 驱动用户已经登录的 Chrome/Edge，无需扫码、无需 token、无需 captcha 破解。
 - **7 个 FastMoss 模块全覆盖** — 商品/达人/店铺/直播/视频&素材/广告引擎/品类大盘，每个模块独立 skill，互不干扰。
 - **CSV + Markdown 双输出** — 原始数据进 `data/`，聚合报告生成到 `analysis.md` 或自定义路径，Excel 友好（UTF-8 BOM）。
 - **Schema 自动适配** — 6 个 DOM-scraping skill 动态读取 `<thead>`，无论 FastMoss 改字段都不需要改代码。
@@ -41,7 +41,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     fastmoss-rpa 项目                       │
+│                fastmoss-browserskill 项目                    │
 ├─────────────────────────────────────────────────────────────┤
 │  .claude/skills/                                            │
 │    ├── fastmoss-products/      # 商品模块 (DOM scrape)      │
@@ -53,6 +53,7 @@
 │    ├── fastmoss-market/        # 品类大盘 (API-first)       │
 │    └── skill-creator/          # Claude skill 创建工具      │
 ├─────────────────────────────────────────────────────────────┤
+│  scripts/                      # bsk_client.py (BrowserSkill CLI 封装) │
 │  data/                        # CSV 输出目录                 │
 │  analysis.md                  # 默认分析报告                 │
 │  CLAUDE.md                    # Claude Code 项目指南         │
@@ -69,7 +70,7 @@
          │     └── analysis_recipe.md
          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│         Kimi WebBridge daemon (localhost:10086)              │
+│          BrowserSkill daemon (localhost:52800)               │
 │   通过 WebSocket 连接用户的 Chrome/Edge 扩展                  │
 └─────────────────────────────────────────────────────────────┘
          │
@@ -77,7 +78,7 @@
    用户的真实浏览器（已登录 fastmoss.com）
 ```
 
-**核心思路：** 不破解、不逆向、不模拟登录 — 直接复用用户日常浏览器的登录态，通过 WebBridge 的 `evaluate` / `click` / `network` 等工具驱动页面。
+**核心思路：** 不破解、不逆向、不模拟登录 — 直接复用用户日常浏览器的登录态，通过 BrowserSkill 的 `evaluate` / `click` / `network` 等工具驱动页面。
 
 ---
 
@@ -86,8 +87,8 @@
 | 依赖 | 版本/要求 | 安装方式 |
 |---|---|---|
 | Python | 3.8+ (内置 `urllib`, `csv`, `json`, `argparse` 即可) | https://python.org |
-| Chrome 或 Edge | 任意现代版本 | 用于 Kimi WebBridge 扩展 |
-| Kimi WebBridge | v1.9.10+ (daemon + 浏览器扩展) | 见 [Kimi WebBridge 文档](https://kimi.com/features/webbridge) |
+| Chrome 或 Edge | 任意现代版本 | 用于 BrowserSkill 扩展 |
+| BrowserSkill | 最新稳定版 (daemon + 浏览器扩展) | `cargo install bsk-cli` |
 | FastMoss 账号 | 任意等级（订阅决定可见数据深度） | https://www.fastmoss.com 注册 |
 | 操作系统 | Windows / macOS / Linux 都可 | bash shell（Windows 用 Git Bash 或 WSL） |
 
@@ -97,18 +98,18 @@
 
 ## 快速开始
 
-### 1. 检查 WebBridge daemon
+### 1. 检查 BrowserSkill daemon
 
 ```bash
-~/.kimi-webbridge/bin/kimi-webbridge status
+bsk doctor --json
 # 期望输出：
-# {"running": true, "extension_connected": true, "version": "v1.9.10", ...}
+# {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
 ```
 
-如果 `running: false` 或 `extension_connected: false`，先启动 daemon 并打开浏览器：
+如果 daemon 未运行：
 
 ```bash
-~/.kimi-webbridge/bin/kimi-webbridge start
+bsk daemon start
 # 然后在浏览器里手动打开任意页面，让扩展激活
 ```
 
@@ -359,7 +360,7 @@ python <SKILL_DIR>/scripts/analyze.py \
 ## 输出文件结构
 
 ```
-fastmoss-rpa/
+fastmoss-browserskill/
 ├── data/                                # 所有 CSV 输出
 │   ├── top50.csv                        # 销量榜 Top 50
 │   ├── by_country.csv                   # 多国家合并 CSV
@@ -398,8 +399,7 @@ fastmoss-rpa/
 任务结束时建议清理 session：
 
 ```bash
-curl -d '{"action":"close_session","args":{},"session":"fastmoss-products"}' \
-  http://127.0.0.1:10086/command
+bsk session stop <session-name>
 ```
 
 ### CSV schema（DOM scrape 类 skill）
@@ -441,8 +441,8 @@ DOM-scraping skill 用中文 label（`--country 美国,印度尼西亚`）。
 
 浏览器扩展没连上 daemon。常见原因：
 - 浏览器没打开 — 打开任意页面激活扩展
-- 扩展被禁用 — 在 `chrome://extensions` 启用 Kimi WebBridge 扩展
-- daemon 端口被占 — 重启 daemon：`~/.kimi-webbridge/bin/kimi-webbridge restart`
+- 扩展被禁用 — 在 `chrome://extensions` 启用 BrowserSkill 扩展
+- daemon 端口被占 — 重启 daemon：`bsk daemon restart`
 
 ### 2. 抓到 0 行
 
@@ -453,11 +453,11 @@ DOM-scraping skill 用中文 label（`--country 美国,印度尼西亚`）。
 
 ### 3. `No node with given id found`
 
-这是 WebBridge 的 @e 引用过期报错。所有 bundled 脚本都不用 @e，全部走 `evaluate` + 文字匹配。如果你自己写脚本也避免 @e。
+这是 BrowserSkill 的 @e 引用过期报错。所有 bundled 脚本都不用 @e，全部走 `evaluate` + 文字匹配。如果你自己写脚本也避免 @e。
 
 ### 4. `Invalid regular expression: missing /`
 
-bash heredoc 把 JS 里的 `\\n` 吃掉一层。**别在 bash heredoc 里写正则** — 改用 `.split('\n')` 或把 JS 写到 `.js` 文件用 Python urllib POST。
+bash heredoc 把 JS 里的 `\\n` 吃掉一层。**别在 bash heredoc 里写正则** — 改用 `.split('\n')` 或把 JS 写到 `.js` 文件用 Python bsk 调用。
 
 ### 5. CSV 在 Excel 里乱码
 
@@ -481,9 +481,7 @@ FastMoss 对非高级订阅返回这个 code，但响应体里**仍然包含数�
 
 `scripts/screenshot.sh` 依赖 jq。Windows 环境下用 Python 解码：
 ```bash
-curl -s -X POST http://127.0.0.1:10086/command \
-  -d '{"action":"screenshot","args":{"format":"jpeg","quality":75},"session":"fastmoss-products"}' \
-  | python -c "import sys,json,base64; open('out.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
+bsk screenshot --session <session> | python -c "import sys,json,base64; open('out.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
 ```
 
 ---
@@ -557,20 +555,15 @@ if body.get("code") != 200:
 
 ```bash
 # 抓页面快照（保存到文件，避免 base64 污染终端）
-curl -s -X POST http://127.0.0.1:10086/command \
-  -d '{"action":"screenshot","args":{"format":"jpeg","quality":75},"session":"<session>"}' \
-  | python -c "import sys,json,base64; open('debug.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
+bsk screenshot --session <session> | python -c "import sys,json,base64; open('debug.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
 
 # 跑 evaluate 探 DOM
-curl -s -X POST http://127.0.0.1:10086/command \
-  -d '{"action":"evaluate","args":{"code":"(() => JSON.stringify({title: document.title, url: location.href}))()"}}'
+bsk evaluate --session <session> "(() => JSON.stringify({title: document.title, url: location.href}))()"
 
 # 抓网络请求（找 API endpoint）
-curl -s -X POST http://127.0.0.1:10086/command \
-  -d '{"action":"network","args":{"cmd":"start","filter":"/api/"}}'
+bsk network start --session <session> --filter "/api/"
 # ... 操作页面触发请求 ...
-curl -s -X POST http://127.0.0.1:10086/command \
-  -d '{"action":"network","args":{"cmd":"list","filter":"/api/"}}'
+bsk network list --session <session>
 ```
 
 ---
@@ -586,10 +579,10 @@ curl -s -X POST http://127.0.0.1:10086/command \
 ## 相关链接
 
 - [FastMoss 官网](https://www.fastmoss.com)
-- [Kimi WebBridge 文档](https://kimi.com/features/webbridge)
+- [BrowserSkill GitHub](https://github.com/Tencent/browserskill)
 - [Claude Code 文档](https://claude.ai/code)
 - 项目内：`CLAUDE.md`（Claude Code 项目指南）、各 skill 的 `SKILL.md`（入口文档）
 
 ## 特别感谢：
 
-https://linux.do 社区佬友 
+https://linux.do 社区佬友

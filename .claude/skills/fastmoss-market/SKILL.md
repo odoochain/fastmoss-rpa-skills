@@ -1,11 +1,11 @@
 ---
 name: fastmoss-market
-description: "Pull FastMoss (fastmoss.com) TikShop category-market data via the FastMoss public web API. Covers both pages in the 品类大盘 section: market-category (行业格局 scatter data — categoryDistribution API) and market-analyze (市场总览 base metrics + salesChart time-series + priceDistribution). Use when the user asks to extract FastMoss market-overview data, compare category sizes by country, find high-growth categories, build a category time-series, or run any data pull from the 品类大盘 section of fastmoss.com. Unlike the sister table-scraping skills, this skill is API-first — it uses page-context fetch() to call FastMoss JSON endpoints directly, so no DOM scraping, no pagination, no SPA-hydration waits. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
+description: "Pull FastMoss (fastmoss.com) TikShop category-market data via the FastMoss public web API. Covers both pages in the 品类大盘 section: market-category (行业格局 scatter data — categoryDistribution API) and market-analyze (市场总览 base metrics + salesChart time-series + priceDistribution). Use when the user asks to extract FastMoss market-overview data, compare category sizes by country, find high-growth categories, build a category time-series, or run any data pull from the 品类大盘 section of fastmoss.com. Unlike the sister table-scraping skills, this skill is API-first — it uses page-context fetch() to call FastMoss JSON endpoints directly, so no DOM scraping, no pagination, no SPA-hydration waits. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
 ---
 
 # fastmoss-market
 
-End-to-end FastMoss **category market overview** data puller + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, then calls FastMoss JSON APIs directly from the page context (so cookies/auth are reused). Scope: the 品类大盘 section of fastmoss.com (2 pages: 行业格局 + 市场总览). For products, creators, shops, ads, videos, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **category market overview** data puller + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, then calls FastMoss JSON APIs directly from the page context (so cookies/auth are reused). Scope: the 品类大盘 section of fastmoss.com (2 pages: 行业格局 + 市场总览). For products, creators, shops, ads, videos, or live streams, use the corresponding sister skill.
 
 ## Why API-first (not DOM scraping)
 
@@ -23,12 +23,12 @@ The bundled scripts call these via page-context `fetch()` (`evaluate`), which au
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser.
 
@@ -150,5 +150,5 @@ sales_product_count, sales_author_count, sales_video_count, sales_live_count,
 ## Session hygiene
 
 - Default session `"fastmoss-market"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-market"}' http://127.0.0.1:10086/command`.
-- The bundled scripts navigate with `newTab:True` on first call so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-market`.
+- The bundled scripts navigate with `tab create` on first call so they work whether or not the session pre-exists.

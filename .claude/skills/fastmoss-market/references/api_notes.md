@@ -213,4 +213,4 @@ Run `python scripts/fetch_filter_info.py` to dump the current full mapping.
 3. **`action=1`** for `base`/`salesChart` is the only observed value. Likely enum: 1=daily, 2=weekly(?), 3=monthly(?). Test before assuming.
 4. **Responses can be large** — `salesChart` returns ~28 daily rows (manageable). `base.top_products` can have 50+ items. `categoryDistribution` returns up to ~27 categories × 1 region per call.
 5. **No pagination needed** — all data returned in one response.
-6. **4xx on auth failure** — if the user is logged out, the API returns a 401/403. Always do `~/.kimi-webbridge/bin/kimi-webbridge status` + verify login before debugging deeper.
+6. **4xx on auth failure** — if the user is logged out, the API returns a 401/403. Always do `bsk doctor --json` + verify login before debugging deeper.

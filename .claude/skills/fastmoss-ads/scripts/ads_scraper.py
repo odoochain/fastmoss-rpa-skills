@@ -1,4 +1,4 @@
-"""FastMoss ads trend ranking scraper via kimi-webbridge.
+"""FastMoss ads trend ranking scraper via BrowserSkill.
 
 Generic paginating scraper for any of the 3 ads trend ranking pages on
 fastmoss.com. Reads thead headers dynamically.
@@ -20,10 +20,12 @@ import csv
 import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
-DAEMON = "http://127.0.0.1:10086"
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+from bsk_client import bsk, configure_utf8_output  # noqa: E402
+
 DEFAULT_SESSION = "fastmoss-ads"
 
 RANKINGS = {
@@ -81,23 +83,28 @@ NEXT_PAGE_JS = """
 
 
 def call(action, args, session):
-    body = json.dumps({"action": action, "args": args, "session": session}).encode()
-    req = urllib.request.Request(f"{DAEMON}/command", data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read())
+    if action == "navigate":
+        url = args.get("url")
+        new_tab = args.get("newTab", False)
+        if new_tab:
+            return bsk("tab create", session, url)
+        else:
+            return bsk("navigate", session, url)
+    elif action == "evaluate":
+        code = args.get("code", "")
+        return bsk("evaluate", session, code)
+    else:
+        raise RuntimeError(f"Unsupported action: {action}")
 
 
 def evaluate(code, session):
     res = call("evaluate", {"code": code}, session)
-    if not res.get("ok"):
-        return {"error": res.get("error", {}).get("message", "unknown")}
-    data = res["data"]
-    if isinstance(data, dict) and data.get("type") == "string":
+    if isinstance(res, dict) and res.get("type") == "string":
         try:
-            return json.loads(data["value"])
+            return json.loads(res["value"])
         except Exception:
-            return {"raw": data.get("value")}
-    return data
+            return {"raw": res.get("value")}
+    return res
 
 
 def sanitize_header(h):

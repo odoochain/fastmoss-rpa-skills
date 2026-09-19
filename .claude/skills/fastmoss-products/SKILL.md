@@ -1,22 +1,22 @@
 ---
 name: fastmoss-products
-description: "Scrape and analyze FastMoss (fastmoss.com) TikTok Shop PRODUCT rankings — 新品榜 / 销量榜 / 热推榜 / 视频商品榜 — with country/category/shop-type filters, plus single-shop new-listing cadence tracking. Use when the user asks to extract FastMoss product ranking data, compare TikTok Shop markets, filter rankings by country or category, track a shop's new-product rhythm, generate a multi-dimensional product analysis report, or run any data pull from the 商品 section of fastmoss.com. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-shops, fastmoss-creators, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams (each covers a different FastMoss section)."
+description: "Scrape and analyze FastMoss (fastmoss.com) TikTok Shop PRODUCT rankings — 新品榜 / 销量榜 / 热推榜 / 视频商品榜 — with country/category/shop-type filters, plus single-shop new-listing cadence tracking. Use when the user asks to extract FastMoss product ranking data, compare TikTok Shop markets, filter rankings by country or category, track a shop's new-product rhythm, generate a multi-dimensional product analysis report, or run any data pull from the 商品 section of fastmoss.com. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-shops, fastmoss-creators, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams (each covers a different FastMoss section)."
 ---
 
 # fastmoss-products
 
-End-to-end FastMoss **product ranking** scraper + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, extracts product rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 商品 section of fastmoss.com (product rankings + a single shop's product-list cadence). For shop-level analytics, creator analytics, ads, videos, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **product ranking** scraper + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, extracts product rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 商品 section of fastmoss.com (product rankings + a single shop's product-list cadence). For shop-level analytics, creator analytics, ads, videos, or live streams, use the corresponding sister skill.
 
 **Self-contained**: includes its own environment notes (`references/environment.md`) and analysis recipe (`references/analysis_recipe.md`). Paths in examples use placeholders (`<your-out-dir>/`, `<your-report>.md`) — pass any path you like via `--out`.
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser (this skill reuses their session — no auth).
 
@@ -109,9 +109,7 @@ Use `/zh/` (Chinese) locale for richest data. Site is a NUXT/Vue SPA — always 
 Run a one-shot `evaluate` against any ranking page that shows the shop:
 
 ```bash
-curl -s -X POST http://127.0.0.1:10086/command \
-  -H 'Content-Type: application/json' \
-  -d '{"action":"evaluate","args":{"code":"JSON.stringify(Array.from(document.querySelectorAll(\"a[href*=\\\"/shop-marketing/detail/\\\"]\")).slice(0,5).map(a=>({shop:a.innerText.split(\"\\n\")[0], href:a.href})))"},"session":"fastmoss-products"}'
+bsk evaluate --session fastmoss-products "JSON.stringify(Array.from(document.querySelectorAll(\"a[href*=\\\"/shop-marketing/detail/\\\"]\")).slice(0,5).map(a=>({shop:a.innerText.split(\"\\n\")[0], href:a.href})))"
 ```
 
 Extract the trailing digits from any `href`. Pass via `--shop-id` to `shop_scraper.py`.
@@ -124,7 +122,7 @@ Full details in `references/environment.md`. Summary:
 2. **Bash heredoc + JS regex = `"Invalid regular expression: missing /"`** — heredoc eats a backslash layer. Use `.split('\n')` over `.replace(/\n+/g, ...)`.
 3. **Page 1 of ranking tables has an empty filler row at top** — `parse_row` filters it (`product_name` empty → drop).
 4. **SPA hydration lag** — wait ≥5s after navigate, ≥3.5s between pages. Too fast → 0 rows.
-5. **`jq` may not be installed** — the kimi-webbridge `screenshot.sh` helper depends on it. Decode screenshots manually with `python -c` + `base64`.
+5. **`jq` may not be installed** — decode screenshots manually with `python -c` + `base64`.
 6. **Python defaults to a locale-specific encoding on Windows** — always `open(..., encoding='utf-8-sig')` when reading the produced CSVs.
 
 ## CSV output schema
@@ -145,5 +143,5 @@ All CSVs are `utf-8-sig` (BOM) for Excel.
 ## Session hygiene
 
 - Default session `"fastmoss-products"` for all calls (isolated tab group from sister skills' sessions like `fastmoss-shops`, `fastmoss-creators`). Override with `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-products"}' http://127.0.0.1:10086/command`.
-- All bundled scripts use `newTab:True` on first navigate so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-products`.
+- All bundled scripts use `tab create` on first navigate so they work whether or not the session pre-exists.

@@ -1,4 +1,4 @@
-"""Fastmoss ranking scraper via kimi-webbridge.
+"""Fastmoss ranking scraper via BrowserSkill.
 
 Generic paginating scraper for any FastMoss ranking page that shares the
 standard table layout (新品榜/销量榜/热推榜/视频商品榜). One row per product,
@@ -13,10 +13,8 @@ import csv
 import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
-DAEMON = "http://127.0.0.1:10086"
 DEFAULT_URL = "https://www.fastmoss.com/zh/e-commerce/newProducts"
 DEFAULT_SESSION = "fastmoss-products"
 
@@ -46,24 +44,46 @@ NEXT_PAGE_JS = """
 """
 
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+from bsk_client import bsk, configure_utf8_output  # noqa: E402
+
+
 def call(action, args, session):
-    body = json.dumps({"action": action, "args": args, "session": session}).encode()
-    req = urllib.request.Request(f"{DAEMON}/command", data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read())
+    if action == "navigate":
+        url = args.get("url")
+        new_tab = args.get("newTab", False)
+        if new_tab:
+            return bsk("tab create", session, url)
+        else:
+            return bsk("navigate", session, url)
+    elif action == "evaluate":
+        code = args.get("code", "")
+        return bsk("evaluate", session, code)
+    elif action == "click":
+        selector = args.get("selector", "")
+        return bsk("click", session, selector)
+    elif action == "fill":
+        selector = args.get("selector", "")
+        value = args.get("value", "")
+        return bsk("fill", session, selector, value=value)
+    elif action == "close_session":
+        return bsk("session stop", session)
+    else:
+        raise RuntimeError(f"Unsupported action: {action}")
 
 
 def evaluate(code, session):
     res = call("evaluate", {"code": code}, session)
-    if not res.get("ok"):
-        return {"error": res.get("error", {}).get("message", "unknown")}
-    data = res["data"]
-    if isinstance(data, dict) and data.get("type") == "string":
+    if isinstance(res, dict) and res.get("type") == "string":
         try:
-            return json.loads(data["value"])
+            return json.loads(res["value"])
         except Exception:
-            return {"raw": data.get("value")}
-    return data
+            return {"raw": res.get("value")}
+    return res
 
 
 def parse_row(cells):

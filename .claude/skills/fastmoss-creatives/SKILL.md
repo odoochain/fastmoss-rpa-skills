@@ -1,20 +1,20 @@
 ---
 name: fastmoss-creatives
-description: "Scrape and analyze FastMoss (fastmoss.com) TikTok creative/video rankings — 热门视频 / 热门音乐 / 热门标签 — with country filter; AI带货视频榜 is card-based and noted but not scripted. Use when the user asks to extract FastMoss video/music/hashtag trend data, find trending creative materials, identify breakout tracks or hashtags, or run any data pull from the 视频&素材 section of fastmoss.com. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-ads, fastmoss-livestreams."
+description: "Scrape and analyze FastMoss (fastmoss.com) TikTok creative/video rankings — 热门视频 / 热门音乐 / 热门标签 — with country filter; AI带货视频榜 is card-based and noted but not scripted. Use when the user asks to extract FastMoss video/music/hashtag trend data, find trending creative materials, identify breakout tracks or hashtags, or run any data pull from the 视频&素材 section of fastmoss.com. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-ads, fastmoss-livestreams."
 ---
 
 # fastmoss-creatives
 
-End-to-end FastMoss **creative material ranking** scraper + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, extracts rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 视频&素材 section of fastmoss.com (3 table-based rankings; AI带货视频榜 is card-based and noted below). For products, shops, creators, ads, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **creative material ranking** scraper + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, extracts rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 视频&素材 section of fastmoss.com (3 table-based rankings; AI带货视频榜 is card-based and noted below). For products, shops, creators, ads, or live streams, use the corresponding sister skill.
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser (this skill reuses their session — no auth).
 
@@ -120,5 +120,5 @@ filter_country
 ## Session hygiene
 
 - Default session `"fastmoss-creatives"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-creatives"}' http://127.0.0.1:10086/command`.
-- All bundled scripts use `newTab:True` on first navigate so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-creatives`.
+- All bundled scripts use `tab create` on first navigate so they work whether or not the session pre-exists.

@@ -1,20 +1,20 @@
 ---
 name: fastmoss-shops
-description: "Scrape and analyze FastMoss (fastmoss.com) TikTok shop rankings — 店铺销量榜 / 店铺热推榜 — with country filter, plus single-shop detail (店铺搜索 entry point noted). Use when the user asks to extract FastMoss shop data, compare shop markets by country, identify breakout shops via 热推榜 (new-creator momentum), or run any data pull from the 店铺 section of fastmoss.com. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
+description: "Scrape and analyze FastMoss (fastmoss.com) TikTok shop rankings — 店铺销量榜 / 店铺热推榜 — with country filter, plus single-shop detail (店铺搜索 entry point noted). Use when the user asks to extract FastMoss shop data, compare shop markets by country, identify breakout shops via 热推榜 (new-creator momentum), or run any data pull from the 店铺 section of fastmoss.com. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
 ---
 
 # fastmoss-shops
 
-End-to-end FastMoss **shop ranking** scraper + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, extracts shop rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 店铺 section of fastmoss.com (2 rankings + shop search). For products, creators, ads, videos, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **shop ranking** scraper + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, extracts shop rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 店铺 section of fastmoss.com (2 rankings + shop search). For products, creators, ads, videos, or live streams, use the corresponding sister skill.
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser (this skill reuses their session — no auth).
 
@@ -116,8 +116,8 @@ filter_country
 ## Session hygiene
 
 - Default session `"fastmoss-shops"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-shops"}' http://127.0.0.1:10086/command`.
-- All bundled scripts use `newTab:True` on first navigate so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-shops`.
+- All bundled scripts use `tab create` on first navigate so they work whether or not the session pre-exists.
 
 ## 店铺搜索 (shop search) — not scripted
 

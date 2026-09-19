@@ -8,42 +8,37 @@ Read this before writing any shell command or new evaluate JS for this skill. Th
 
 - Use forward slashes (`/`) in all paths. Backslashes work in some tools but break in JSON strings.
 - Use `/dev/null`, NOT `NUL` (Windows) — bash shells handle `/dev/null` correctly even on Windows.
-- `~/.kimi-webbridge/` resolves to `<user-home>/.kimi-webbridge/` on any OS.
 - Output paths are user-supplied via `--out`. Never assume a specific directory layout — the bundled scripts accept any path and create parent dirs as needed.
 
-## Kimi WebBridge daemon
+## BrowserSkill daemon
 
-- Listens on `http://127.0.0.1:10086`.
-- Daemon binary: `~/.kimi-webbridge/bin/kimi-webbridge` (status/start/stop/restart/logs subcommands).
-- One Chrome/Edge extension connects via WebSocket; the extension ID appears in the `status` JSON.
-- If `extension_connected: false` after `start`, ask the user to open their browser (extension only runs when the browser is open).
-- If running multiple FastMoss sister skills in parallel, each one defaults to its own session name (`fastmoss-products`, `fastmoss-creators`, `fastmoss-shops`, `fastmoss-livestreams`, `fastmoss-creatives`, `fastmoss-ads`) — no conflict.
+- Daemon binary: `bsk` (CLI tool, installed via `cargo install bsk-cli`)
+- Daemon listens on WebSocket (no fixed HTTP port like kimi-webbridge)
+- Check health: `bsk doctor --json`
+- Start daemon: `bsk daemon start`
+- Stop daemon: `bsk daemon stop`
+- One Chrome/Edge extension connects via WebSocket; extension status appears in the `doctor` JSON.
+- If `extension.connected: false` after `start`, ask the user to open their browser (extension only runs when the browser is open).
+- If running multiple FastMoss sister skills in parallel, each one defaults to its own session name (`fastmoss-products`, `fastmoss-ads`, etc.) — no conflict.
 
 ## Bash + JSON escaping rules
 
-### `curl` with single-line JSON: works
+### `bsk` CLI commands: works
 ```bash
-curl -s -X POST http://127.0.0.1:10086/command \
-  -H 'Content-Type: application/json' \
-  -d '{"action":"navigate","args":{"url":"https://example.com","newTab":true},"session":"fastmoss-ads"}'
+bsk navigate --session fastmoss-ads "https://example.com"
+bsk evaluate --session fastmoss-ads "(() => JSON.stringify({title: document.title}))()"
 ```
 
 ### Heredoc `<<EOF` with JS regex: BREAKS
 Bash eats one backslash layer, so `/\n+/g` arrives malformed → extension returns `"Invalid regular expression: missing /"`.
 
-**Fix**: prefer `.split('\n')` over `.replace(/\n+/g, ...)`. For complex JS, write to a `.js` file and POST via Python `urllib` (no shell layer).
-
-### `curl -d @file.json`: works for any payload
-Save the JSON request body to a file, then `curl -d @body.json`. Bypasses shell escaping entirely.
+**Fix**: prefer `.split('\n')` over `.replace(/\n+/g, ...)`. For complex JS, write to a `.js` file and call via Python `bsk_client.py` (no shell layer).
 
 ### `jq` may not be installed
-The kimi-webbridge `screenshot.sh` helper script depends on `jq` and will fail when it's missing. Decode screenshots manually:
+Decode screenshots manually:
 
 ```bash
-curl -s -X POST http://127.0.0.1:10086/command \
-  -H 'Content-Type: application/json' \
-  -d '{"action":"screenshot","args":{"format":"jpeg","quality":75},"session":"fastmoss-ads"}' \
-  | python -c "import sys,json,base64; open('out.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
+bsk screenshot --session fastmoss-ads | python -c "import sys,json,base64; open('out.jpeg','wb').write(base64.b64decode(json.load(sys.stdin)['data']['data']))"
 ```
 
 ## Python file encoding
@@ -57,6 +52,6 @@ with open('your.csv', encoding='utf-8-sig') as f:
 
 ## Browser session
 
-- Default session `"fastmoss-ads"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- `close_session` closes ALL tabs in the session — always run at task end.
-- `navigate newTab:true` works whether or not the session pre-exists.
+- Default session `"fastmoss-ads"` for all calls (isolated from sister skills' sessions like `fastmoss-products`, `fastmoss-creators`). Override via `--session` if needed.
+- `bsk session stop fastmoss-ads` closes ALL tabs in the session — always run at task end.
+- `bsk tab create --session fastmoss-ads <url>` works whether or not the session pre-exists.

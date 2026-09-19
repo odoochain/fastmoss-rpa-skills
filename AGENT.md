@@ -1,10 +1,10 @@
-# CLAUDE.md
+# AGENT.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Purpose
 
-`fastmoss-rpa` is a browser-RPA + data-analysis project on **fastmoss.com** (TikTok Shop analytics). All operational knowledge lives in **section-specific** bundled skills under `.claude/skills/`:
+`fastmoss-browserskill` is a browser-RPA + data-analysis project on **fastmoss.com** (TikTok Shop analytics). All operational knowledge lives in **section-specific** bundled skills under `.claude/skills/`:
 
 | Skill | FastMoss section |
 |---|---|
@@ -29,8 +29,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick start
 
 ```bash
-# Verify Kimi WebBridge daemon is healthy
-~/.kimi-webbridge/bin/kimi-webbridge status
+# Verify BrowserSkill daemon is healthy
+bsk doctor --json
 
 # Top 50 → CSV
 python .claude/skills/fastmoss-products/scripts/fastmoss_scraper.py --pages 5 --out data/top50.csv

@@ -1,20 +1,20 @@
 ---
 name: fastmoss-creators
-description: "Scrape and analyze FastMoss (fastmoss.com) TikTok creator/influencer rankings — 涨粉达人榜 / 带货达人榜 / 蓝V达人榜 / 热门达人榜 / 黑马达人榜 — with time-window (日/周/月榜) and country filters. Use when the user asks to extract FastMoss creator data, compare creator markets by country, find cross-ranking creators, identify breakout creators via 黑马榜, or run any data pull from the 达人 section of fastmoss.com. Includes 达人搜索 entry point. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-shops, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
+description: "Scrape and analyze FastMoss (fastmoss.com) TikTok creator/influencer rankings — 涨粉达人榜 / 带货达人榜 / 蓝V达人榜 / 热门达人榜 / 黑马达人榜 — with time-window (日/周/月榜) and country filters. Use when the user asks to extract FastMoss creator data, compare creator markets by country, find cross-ranking creators, identify breakout creators via 黑马榜, or run any data pull from the 达人 section of fastmoss.com. Includes 达人搜索 entry point. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-shops, fastmoss-ads, fastmoss-creatives, fastmoss-livestreams."
 ---
 
 # fastmoss-creators
 
-End-to-end FastMoss **creator ranking** scraper + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, extracts creator rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 达人 section of fastmoss.com (5 rankings + creator search). For products, shops, ads, videos, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **creator ranking** scraper + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, extracts creator rows into CSVs, and ships an aggregation script + Markdown report template that produces an analysis report. Scope: the 达人 section of fastmoss.com (5 rankings + creator search). For products, shops, ads, videos, or live streams, use the corresponding sister skill.
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser (this skill reuses their session — no auth).
 
@@ -135,8 +135,8 @@ filter_country, filter_time
 ## Session hygiene
 
 - Default session `"fastmoss-creators"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-creators"}' http://127.0.0.1:10086/command`.
-- All bundled scripts use `newTab:True` on first navigate so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-creators`.
+- All bundled scripts use `tab create` on first navigate so they work whether or not the session pre-exists.
 
 ## 达人搜索 (creator search) — not scripted
 

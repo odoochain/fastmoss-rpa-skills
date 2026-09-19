@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-`fastmoss-rpa` is a browser-RPA + data-analysis project on **fastmoss.com** (TikTok Shop analytics). All operational knowledge lives in **section-specific** bundled skills under `.claude/skills/`:
+`fastmoss-browserskill` is a browser-RPA + data-analysis project on **fastmoss.com** (TikTok Shop analytics). All operational knowledge lives in **section-specific** bundled skills under `.claude/skills/`:
 
 | Skill | FastMoss section |
 |---|---|
@@ -29,8 +29,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick start
 
 ```bash
-# Verify Kimi WebBridge daemon is healthy
-~/.kimi-webbridge/bin/kimi-webbridge status
+# Verify BrowserSkill daemon is healthy
+bsk doctor --json
 
 # Top 50 → CSV
 python .claude/skills/fastmoss-products/scripts/fastmoss_scraper.py --pages 5 --out data/top50.csv
@@ -45,3 +45,9 @@ python .claude/skills/fastmoss-products/scripts/analyze.py \
 ## Working in this repo
 
 Windows + bash shell. Use forward-slash paths and `/dev/null` (not `NUL`). No build/test/lint commands — outputs land in `data/`, the report lands in `analysis.md`.
+
+## BrowserSkill Integration
+
+All scripts use `bsk_client.py` from the project root `scripts/` directory, which wraps the BrowserSkill CLI (`bsk`). Session management is handled automatically:
+- Each skill uses its own session name (`fastmoss-products`, `fastmoss-creators`, etc.)
+- Sessions are created on first navigation and persist across script runs

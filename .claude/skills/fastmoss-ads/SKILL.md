@@ -1,20 +1,20 @@
 ---
 name: fastmoss-ads
-description: "Scrape and analyze FastMoss (fastmoss.com) TikTok ads trend rankings — 标签洞察 / 关键词趋势 / 热门品类趋势 — with country filter. The 3 card-style ads pages (电商广告 / 种草广告 / 广告主洞察) and 广告案例搜索 are noted but not scripted. Use when the user asks to extract FastMoss ads trend data, find trending ad keywords/tags/categories, identify breakout ad creative categories, or run any data pull from the 广告引擎 section's ranking pages of fastmoss.com. Drives the user's real logged-in browser via kimi-webbridge. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-creatives, fastmoss-livestreams."
+description: "Scrape and analyze FastMoss (fastmoss.com) TikTok ads trend rankings — 标签洞察 / 关键词趋势 / 热门品类趋势 — with country filter. The 3 card-style ads pages (电商广告 / 种草广告 / 广告主洞察) and 广告案例搜索 are noted but not scripted. Use when the user asks to extract FastMoss ads trend data, find trending ad keywords/tags/categories, identify breakout ad creative categories, or run any data pull from the 广告引擎 section's ranking pages of fastmoss.com. Drives the user's real logged-in browser via BrowserSkill. Self-contained — includes Windows/bash environment notes and the analysis report recipe. Sister skills: fastmoss-products, fastmoss-creators, fastmoss-shops, fastmoss-creatives, fastmoss-livestreams."
 ---
 
 # fastmoss-ads
 
-End-to-end FastMoss **ads trend ranking** scraper + analyzer. Uses `kimi-webbridge` to drive the user's logged-in browser, extracts rows into CSVs, and ships an aggregation script + Markdown report template. Scope: 3 table-based trend rankings in the 广告引擎 section of fastmoss.com. The 3 card-based ad search pages (电商广告 / 种草广告 / 广告主洞察) are out of scope — they're filter-search interfaces, not rankings. For products, creators, shops, videos, or live streams, use the corresponding sister skill.
+End-to-end FastMoss **ads trend ranking** scraper + analyzer. Uses `bsk` (BrowserSkill CLI) to drive the user's logged-in browser, extracts rows into CSVs, and ships an aggregation script + Markdown report template. Scope: 3 table-based trend rankings in the 广告引擎 section of fastmoss.com. The 3 card-based ad search pages (电商广告 / 种草广告 / 广告主洞察) are out of scope — they're filter-search interfaces, not rankings. For products, creators, shops, videos, or live streams, use the corresponding sister skill.
 
 ## Prerequisites
 
-1. Kimi WebBridge daemon healthy:
+1. BrowserSkill daemon healthy:
    ```bash
-   ~/.kimi-webbridge/bin/kimi-webbridge status
-   # expect: {"running": true, "extension_connected": true}
+   bsk doctor --json
+   # expect: {"ok": true, "daemon": {"running": true}, "extension": {"installed": true, "connected": true}}
    ```
-   If not healthy: invoke `Skill(kimi-webbridge)` and follow `references/operations.md`.
+   If not healthy: start daemon with `bsk daemon start`.
 
 2. User is **logged in** to fastmoss.com in their browser (this skill reuses their session — no auth).
 
@@ -122,8 +122,8 @@ filter_country
 ## Session hygiene
 
 - Default session `"fastmoss-ads"` for all calls (isolated from sister skills' sessions). Override via `--session` if needed.
-- At task end: `curl -d '{"action":"close_session","args":{},"session":"fastmoss-ads"}' http://127.0.0.1:10086/command`.
-- All bundled scripts use `newTab:True` on first navigate so they work whether or not the session pre-exists.
+- At task end: `bsk session stop fastmoss-ads`.
+- All bundled scripts use `tab create` on first navigate so they work whether or not the session pre-exists.
 
 ## Ads search pages (not scripted) — design note
 
